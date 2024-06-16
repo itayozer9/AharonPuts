@@ -5,6 +5,7 @@ import csv
 import time
 import random
 from itertools import cycle
+import os
 
 def get_options_data(ticker, option_date, percentage, headers):
     url = f"https://finviz.com/quote.ashx?t={ticker}&ta=1&p=d&ty=oc&e={option_date}"
@@ -45,11 +46,6 @@ def get_options_data(ticker, option_date, percentage, headers):
         'bid_price': bid_price
     }
 
-# Function to read symbols from a file
-def read_symbols(file_path):
-    with open(file_path, 'r') as file:
-        return [line.strip() for line in file]
-
 # Function to rotate headers
 def get_headers():
     user_agents = [
@@ -61,11 +57,7 @@ def get_headers():
     return headers
 
 # Main function
-def main():
-    symbols = read_symbols('symbols.txt')
-    option_date = '2024-07-26'
-    percentage = 15
-    
+def main(symbols, option_date, percentage):
     results = []
     headers = get_headers()
     
@@ -79,8 +71,11 @@ def main():
         except Exception as e:
             print(f"Error fetching data for {ticker}: {e}")
     
+    # Ensure the output directory exists
+    os.makedirs('output', exist_ok=True)
+    
     # Write results to CSV
-    csv_file = f"options_data_{option_date}_{percentage}.csv"
+    csv_file = f"output/options_data_{option_date}_{percentage}.csv"
     with open(csv_file, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['symbol', 'stock_price', 'strike_price', 'bid_price'])
@@ -90,4 +85,8 @@ def main():
     print(f"Data written to {csv_file}")
 
 if __name__ == "__main__":
-    main()
+    # Example usage, replace with your actual parameters
+    symbols = ["AAPL", "MSFT", "GOOGL"]
+    option_date = '2024-07-26'
+    percentage = 15
+    main(symbols, option_date, percentage)
