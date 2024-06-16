@@ -6,6 +6,7 @@ import time
 import random
 from itertools import cycle
 import os
+from datetime import datetime
 
 def get_options_data(ticker, option_date, percentage, headers):
     url = f"https://finviz.com/quote.ashx?t={ticker}&ta=1&p=d&ty=oc&e={option_date}"
@@ -36,7 +37,7 @@ def get_options_data(ticker, option_date, percentage, headers):
     if nearest_option['type'] != 'put':
         raise Exception("No put option found near the target strike price")
     
-    bid_price = nearest_option['bidPrice']
+    bid_price = nearest_option['bidPrice'] * 100  # Premium (bid price multiplied by 100)
     strike_price = nearest_option['strike']
     
     return {
@@ -56,15 +57,26 @@ def get_headers():
     headers = cycle([{"User-Agent": agent} for agent in user_agents])
     return headers
 
+# Calculate the number of days to expiration
+def calculate_days_to_expiration(option_date):
+    expiration_date = datetime.strptime(option_date, "%Y-%m-%d")
+    today = datetime.today()
+    return (expiration_date - today).days
+
 # Main function
 def main(symbols, option_date, percentage):
     results = []
     headers = get_headers()
+    days_to_expiration = calculate_days_to_expiration(option_date)
     
     for ticker in symbols:
         try:
             header = next(headers)
             data = get_options_data(ticker, option_date, percentage, header)
+            collateral = data['last_close'] * 20
+            yield_percentage = (1 / collateral) * (data['bid_price'] / days_to_expiration * 365) * 100
+            data['collateral'] = collateral
+            data['yield'] = yield_percentage
             results.append(data)
             # Random delay between 1 to 5 seconds
             time.sleep(random.uniform(1, 5))
@@ -78,15 +90,8 @@ def main(symbols, option_date, percentage):
     csv_file = f"output/options_data_{option_date}_{percentage}.csv"
     with open(csv_file, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['symbol', 'stock_price', 'strike_price', 'bid_price'])
+        writer.writerow(['symbol', 'stock_price', 'strike_price', 'bid_price', 'collateral', 'yield'])
         for row in results:
-            writer.writerow([row['ticker'], row['last_close'], row['strike_price'], row['bid_price']])
+            writer.writerow([row['ticker'], row['last_close'], row['strike_price'], row['bid_price'], row['collateral'], row['yield']])
     
     print(f"Data written to {csv_file}")
-
-if __name__ == "__main__":
-    # Example usage, replace with your actual parameters
-    symbols = ["AAPL", "MSFT", "GOOGL"]
-    option_date = '2024-07-26'
-    percentage = 15
-    main(symbols, option_date, percentage)
