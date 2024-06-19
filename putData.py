@@ -92,6 +92,13 @@ def main(symbols, option_date, percentage):
         writer = csv.writer(file)
         writer.writerow(['symbol', 'stock_price', 'strike_price', 'bid_price', 'collateral', 'yield'])
         for row in results:
-            writer.writerow([row['ticker'], row['last_close'], row['strike_price'], row['bid_price'], row['collateral'], row['yield']])
+            writer.writerow([
+                row['ticker'], 
+                f"{row['last_close']:.2f}" if not row['last_close'].is_integer() else int(row['last_close']), 
+                f"{row['strike_price']:.2f}" if not row['strike_price'].is_integer() else int(row['strike_price']), 
+                f"{row['bid_price']:.2f}" if not row['bid_price'].is_integer() else int(row['bid_price']),
+                f"{row['collateral']:.2f}" if not row['collateral'].is_integer() else int(row['collateral']),
+                f"{row['yield']:.2f}" if not row['yield'].is_integer() else int(row['yield'])
+            ])
     
     print(f"Data written to {csv_file}")
