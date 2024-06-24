@@ -31,11 +31,14 @@ def get_options_data(ticker, option_date, percentage, headers):
     
     target_strike = last_close * (1 - percentage / 100)
     
-    # Find the nearest strike price
-    nearest_option = min(options, key=lambda x: abs(x['strike'] - target_strike) if x['type'] == 'put' else float('inf'))
+    # Filter for put options with strike prices below the current stock price
+    valid_put_options = [opt for opt in options if opt['type'] == 'put' and opt['strike'] < last_close]
     
-    if nearest_option['type'] != 'put':
-        raise Exception("No put option found near the target strike price")
+    if not valid_put_options:
+        raise Exception("No valid put options found below the current stock price")
+    
+    # Find the nearest strike price
+    nearest_option = min(valid_put_options, key=lambda x: abs(x['strike'] - target_strike))
     
     bid_price = nearest_option['bidPrice'] * 100  # Premium (bid price multiplied by 100)
     strike_price = nearest_option['strike']
@@ -90,15 +93,15 @@ def main(symbols, option_date, percentage):
     csv_file = f"output/options_data_{option_date}_{percentage}.csv"
     with open(csv_file, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['symbol', 'stock_price', 'strike_price', 'bid_price', 'collateral', 'yield'])
+        writer.writerow(['symbol', 'stock_price', 'strike_price', 'bid_price', 'yield', 'collateral'])
         for row in results:
             writer.writerow([
                 row['ticker'], 
                 f"{row['last_close']:.2f}" if not float(row['last_close']).is_integer() else int(row['last_close']), 
                 f"{row['strike_price']:.2f}" if not float(row['strike_price']).is_integer() else int(row['strike_price']), 
                 f"{row['bid_price']:.2f}" if not float(row['bid_price']).is_integer() else int(row['bid_price']),
-                f"{row['collateral']:.2f}" if not float(row['collateral']).is_integer() else int(row['collateral']),
-                f"{row['yield']:.2f}" if not float(row['yield']).is_integer() else int(row['yield'])
+                f"{row['yield']:.2f}" if not float(row['yield']).is_integer() else int(row['yield']),
+                f"{row['collateral']:.2f}" if not float(row['collateral']).is_integer() else int(row['collateral'])
             ])
     
     print(f"Data written to {csv_file}")
