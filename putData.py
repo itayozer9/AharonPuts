@@ -69,6 +69,7 @@ def calculate_days_to_expiration(option_date):
 # Main function
 def main(symbols, option_date, percentage):
     results = []
+    failed_symbols = []
     headers = get_headers()
     days_to_expiration = calculate_days_to_expiration(option_date)
     
@@ -85,6 +86,7 @@ def main(symbols, option_date, percentage):
             time.sleep(random.uniform(1, 5))
         except Exception as e:
             print(f"Error fetching data for {ticker}: {e}")
+            failed_symbols.append(ticker)
     
     # Ensure the output directory exists
     os.makedirs('output', exist_ok=True)
@@ -105,3 +107,16 @@ def main(symbols, option_date, percentage):
             ])
     
     print(f"Data written to {csv_file}")
+
+    # Write failed symbols to CSV
+    failed_csv_file = f"output/failed_symbols_{option_date}_{percentage}.csv"
+    with open(failed_csv_file, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['symbol'])
+        for symbol in failed_symbols:
+            writer.writerow([symbol])
+    
+    print(f"Failed symbols written to {failed_csv_file}")
+
+if __name__ == "__main__":
+    main(['AAPL', 'MSFT', 'AC' 'GOOG'], '2024-07-26', 15)
